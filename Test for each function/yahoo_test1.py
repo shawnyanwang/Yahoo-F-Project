@@ -93,8 +93,8 @@ import matplotlib.pyplot as plt
 # refresh()
 from yahoo_finance import Share
 import time
-from Auto_Investment import Pre_Process
-yahoo = Share('GCH')
+from Auto_Investment import PreProcess
+yahoo = Share('YGE')
 try :
     temp = Share('BW@')
 except ConnectionError:
@@ -111,7 +111,7 @@ print (t)
 M = yahoo.get_market_cap()
 if M == None:
     print (yahoo.get_market_cap())
-print (yahoo)
+print (yahoo.get_info())
 # ya = yahoo.get_historical('2000-04-25', '2014-04-29')
 # n = ya.__len__()
 # print(n)
