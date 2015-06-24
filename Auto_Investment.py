@@ -9,6 +9,7 @@ import matplotlib.dates as mdates
 import string
 import time
 import csv
+import numpy as np
 
 class PreProcess:
 
@@ -25,49 +26,77 @@ class PreProcess:
             res = float(market_cap[0:])
         return int(res)
 
-    @staticmethod
-    def plot_curve(days=30, symbol='YHOO'):
+    class Curve:
+        def __init__(self, days=100, symbol=''):
+            self.days = days
+            self.symbol = symbol
+            self.end_date = str(date.today())
+            self.start_date = str(date.today() - timedelta(days=self.days))
+            history = Share(self.symbol).get_historical(self.start_date, self.end_date)
+            self.y, self.x = [], []
+            for i in history:
+                self.y.append(float(i['Close']))
+                self.x.append(i['Date'])
+            self.y.reverse()
+            self.x.reverse()
+            self.x = [dt.datetime.strptime(d, '%Y-%m-%d').date() for d in self.x]
+            self.k = []
+            self.d = [0]
 
-        """
-        :param days : int
-        :param symbol : string
+        def derivative(self, multi=1):
+            for i in range(len(self.k)-1):
+                self.d.append((self.k[i+1]-self.k[i])*multi+min(self.y)+(max(self.y)-min(self.y))/5)
 
-        """
+        def moving_average(self, ave_days):
+            win = [1 for i in range(ave_days)]
+            temp1 = [self.y[0] for i in range(ave_days)]
+            temp2 = [self.y[-1] for i in range(ave_days)]
+            self.k = np.convolve(temp1+self.y+temp2, win)/ave_days
+            self.k = self.k[3*ave_days/2:]
 
-        end_date = str(date.today())
-        start_date = str(date.today() - timedelta(days=days))
-        history = Share(symbol).get_historical(start_date, end_date)
-        Price, Date = [], []
-        for i in history:
-            Price.append(float(i['Close']))
-            Date.append(i['Date'])
-        Date = [dt.datetime.strptime(d, '%Y-%m-%d').date() for d in Date]
-        fig = plt.figure()
-        axes = fig.add_axes([0.11, 0.19, 0.8, 0.7])
-        plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%Y/%m/%d'))
-        if days < 15:
-            plt.gca().xaxis.set_major_locator(mdates.DayLocator())
-        elif days < 105:
-            plt.gca().xaxis.set_major_locator(mdates.WeekdayLocator())
-        elif days < 365 * 3:
-            plt.gca().xaxis.set_major_locator(mdates.MonthLocator())
-        else:
-            plt.gca().xaxis.set_major_locator(mdates.YearLocator())
 
-        if Price[1] < Price[-1]:
-            axes.plot(Date, Price, 'r-')
-            plt.fill_between(Date, Price, 0, color='r')
-        else:
-            axes.plot(Date, Price, 'g-')
-            plt.fill_between(Date, Price, 0, color='g')
 
-        plt.gcf().autofmt_xdate()
-        plt.ylim(min(Price), max(Price) + (max(Price) - min(Price)) / 20)
-        axes.set_xlabel('Date')
-        axes.set_ylabel('Price')
-        axes.set_title(symbol + ': ' + start_date + ' to ' + end_date)
-        plt.grid(True)
-        plt.show()
+
+
+        def plot_curve(self):
+
+            """
+            :param days : int
+            :param symbol : string
+
+            """
+            fig = plt.figure()
+            axes = fig.add_axes([0.11, 0.19, 0.8, 0.7])
+            plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%Y/%m/%d'))
+
+            if self.days < 15:
+                plt.gca().xaxis.set_major_locator(mdates.DayLocator())
+            elif self.days < 105:
+                plt.gca().xaxis.set_major_locator(mdates.WeekdayLocator())
+            elif self.days < 365 * 3:
+                plt.gca().xaxis.set_major_locator(mdates.MonthLocator())
+            else:
+                plt.gca().xaxis.set_major_locator(mdates.YearLocator())
+
+            if self.y[0] > self.y[-1]:
+                axes.plot(self.x, self.y, 'r-')
+                plt.fill_between(self.x, self.y, 0, color='r')
+            else:
+                axes.plot(self.x, self.y, 'g-')
+                plt.fill_between(self.x, self.y, 0, color='g')
+
+            if len(self.k) > len(self.y):
+                axes.plot(self.x, self.k[:len(self.y)], 'b-')
+            if len(self.d) > 1:
+                axes.plot(self.x, self.d[:len(self.y)], 'y-')
+
+            plt.gcf().autofmt_xdate()
+            plt.ylim(min(self.y), max(self.y) + (max(self.y) - min(self.y)) / 20)
+            axes.set_xlabel('x')
+            axes.set_ylabel('y')
+            axes.set_title(self.symbol + ': ' + self.start_date + ' to ' + self.end_date)
+            plt.grid(True)
+            plt.show()
 
     @staticmethod
     def convert_to_symbol(num):
@@ -90,8 +119,8 @@ class PreProcess:
             writer = csv.writer(f)
             writer.writerow(['Symbol', 'Marcket cap'])
             for i in range(27**5):
-                print(i)
-                try :
+                print(int(i/27**5))
+                try:
                     temp = Share(PreProcess.convert_to_symbol(i)).get_market_cap()
 
                     if temp != None:

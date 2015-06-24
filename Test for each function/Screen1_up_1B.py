@@ -1,7 +1,7 @@
 __author__ = 'YangWang'
 
 from yahoo_finance import Share
-from Auto_Investment import Pre_Process
+from Auto_Investment import PreProcess
 import csv
 import time
 
@@ -39,7 +39,7 @@ with open('Screen1_res.csv', 'w', newline='') as f:
         # print (Pre_Process.str2float(Share(i).get_market_cap()))
         try:
             temp = Share(Symbol[i])
-            if Pre_Process.str2float(Share(Symbol[i]).get_market_cap()) < 10**9:
+            if PreProcess.str2float(Share(Symbol[i]).get_market_cap()) < 10**9:
                 print('remove',  Symbol[i])
                 Symbol.remove(Symbol[i])
                 i -= 1
